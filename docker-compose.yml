@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_DSN: "host=db user=gorm password=gorm dbname=hefesto port=5432 sslmode=disable"
+      API_KEY: "JzNztV4A"
+    depends_on:
+      - db
+
+  db:
+    build: config/postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "gorm"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
