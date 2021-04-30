@@ -1,4 +1,4 @@
-# Hermes
+# Hefesto
 
 ## Backend
 
@@ -18,8 +18,8 @@ $ cd hefesto
 $ docker-compose build && docker-compose up
 ```
 
-Para comprobar si Hermes funciona de forma correcta, ir a algún
+Para comprobar si Hefesto funciona de forma correcta, ir a algún
 navegador de internet y navegar a `http://localhost:8080/healthcheck`
 
-Si Hermes ha sido levantado exitósamente, el mensaje `Hermes funciona correctamente`
+Si Hefesto ha sido levantado exitósamente, el mensaje `Hefesto funciona correctamente`
 podrá leerse en pantalla.
