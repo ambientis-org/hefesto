@@ -1,7 +1,10 @@
 package routes
 
 import (
+	"github.com/ambientis-org/hefesto/internal/http/auth"
+	"github.com/labstack/echo/v4/middleware"
 	"net/http"
+	"os"
 
 	"github.com/ambientis-org/hefesto/internal/db/models"
 	"github.com/labstack/echo/v4"
@@ -69,30 +72,22 @@ func updateUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-// createUser POST method User handler
-func createUser(c echo.Context) error {
-	user := &models.User{}
-	err := c.Bind(user)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	DataBase.Create(user)
-
-	return c.JSON(http.StatusCreated, user)
-}
-
 // SetupUsers Add User handlers to API
 func (router *Router) setupUsers() {
 
 	// User endpoint, protecting it
 	router.addGroup("/users")
 	group := API.groups["/users"]
+	config := middleware.JWTConfig{
+		Claims: &auth.CustomClaims{},
+		SigningKey: []byte(os.Getenv("API_KEY")),
+	}
+
+	group.Use(middleware.JWTWithConfig(config))
 
 	group.GET("", getAllUsers)
 	group.GET("/:id", getUserByID)
 	group.GET("/:username", getUserByUsername)
-	group.POST("", createUser)
 	group.PATCH("/:id", updateUser)
 	group.DELETE("/:id", deleteUser)
 }

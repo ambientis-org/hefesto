@@ -47,11 +47,27 @@ func login(c echo.Context) error {
 	})
 }
 
+// register POST method User handler
+func register(c echo.Context) error {
+	user := &models.User{}
+	err := c.Bind(user)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	DataBase.Create(user)
+
+	return c.JSON(http.StatusCreated, user)
+}
+
 // setupLogin Add Login handlers to API
 func (router *Router) setupLogin() {
 	router.addGroup("/login")
+	router.addGroup("/register")
 
 	loginGroup := API.groups["/login"]
 	loginGroup.POST("", login)
 
+	registerGroup := API.groups["/register"]
+	registerGroup.POST("", register)
 }
