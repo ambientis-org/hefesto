@@ -44,6 +44,7 @@ func healthcheck(c echo.Context) error {
 func GetRouter() *Router {
 	API.Server.GET("/healthcheck", healthcheck)
 	API.setupUsers()
+	API.setupLogin()
 
 	return API
 }
