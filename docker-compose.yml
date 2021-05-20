@@ -20,5 +20,15 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  vault:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/var/lib/mongodb/data
+    environment:
+      MONGODB_URI: "mongodb://localhost:27017"
+
 volumes:
   pgdata:
+  mongodata:
