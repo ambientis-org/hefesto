@@ -20,24 +20,11 @@ func getAllUsers(c echo.Context) error {
 	return c.JSON(http.StatusOK, users)
 }
 
-// getUserByID GET method User handler
-func getUserByID(c echo.Context) error {
-	u := &models.User{}
-
-	DataBase.First(u, c.Param("id"))
-	if u.ID == 0 {
-		return c.JSON(http.StatusNotFound, nil)
-	}
-	return c.JSON(http.StatusOK, u)
-}
 
 // getUserByUsername
 func getUserByUsername(c echo.Context) error {
 	u := &models.User{}
-	DataBase.First(u, c.Param("username"))
-	if u.ID == 0 {
-		c.JSON(http.StatusNotFound, nil)
-	}
+	DataBase.Where("username = ?", c.Param("username")).First(u)
 
 	return c.JSON(http.StatusOK, u)
 }
@@ -86,7 +73,6 @@ func (router *Router) setupUsers() {
 	group.Use(middleware.JWTWithConfig(config))
 
 	group.GET("", getAllUsers)
-	group.GET("/:id", getUserByID)
 	group.GET("/:username", getUserByUsername)
 	group.PATCH("/:id", updateUser)
 	group.DELETE("/:id", deleteUser)

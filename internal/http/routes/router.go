@@ -18,7 +18,15 @@ func newRouter() *Router {
 	server := echo.New()
 	server.Use(middleware.Logger())
 	server.Use(middleware.Recover())
-	server.Use(middleware.CORS())
+
+	customCORS := middleware.CORSConfig{
+		ExposeHeaders: []string{echo.HeaderSetCookie},
+		AllowHeaders: []string{echo.HeaderSetCookie, echo.HeaderContentType, echo.HeaderAuthorization},
+		AllowOrigins: []string{"http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowMethods: []string{http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete, http.MethodOptions},
+		AllowCredentials: true,
+	}
+	server.Use(middleware.CORSWithConfig(customCORS))
 
 	return &Router{Server: server, groups: make(map[string]*echo.Group)}
 }
