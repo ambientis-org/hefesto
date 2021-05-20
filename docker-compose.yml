@@ -26,6 +26,8 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/var/lib/mongodb/data
+    environment:
+      MONGODB_URI: "mongodb://localhost:27017"
 
 volumes:
   pgdata:
