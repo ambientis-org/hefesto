@@ -15,16 +15,16 @@ const THREEDAYS = 72
 
 // login receives user and password and returns token
 func login(c echo.Context) error {
-	requestedUser := &models.User{}
-	err := c.Bind(requestedUser)
+	requested := &models.User{}
+	err := c.Bind(requested)
 	if err != nil {
 		return err
 	}
 
 	user := &models.User{}
-	DataBase.Where("Username = ?", requestedUser.Username).First(user)
+	DataBase.Where("Email = ?", requested.Email).First(user)
 
-	if requestedUser.Password != user.Password {
+	if requested.Password != user.Password {
 		return echo.ErrUnauthorized
 	}
 
@@ -32,7 +32,7 @@ func login(c echo.Context) error {
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * THREEDAYS).Unix(),
 		},
-		Username: requestedUser.Username,
+		Username: requested.Username,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -43,8 +43,14 @@ func login(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusAccepted, echo.Map{
-		"token": signedToken,
+		"mentiaAuthToken": signedToken,
+		"username": user.Username,
 	})
+}
+
+
+func loginPreflight(c echo.Context) error {
+	return c.JSON(http.StatusOK, nil)
 }
 
 // register POST method User handler
@@ -67,6 +73,7 @@ func (router *Router) setupLogin() {
 
 	loginGroup := API.groups["/login"]
 	loginGroup.POST("", login)
+	loginGroup.OPTIONS("", loginPreflight)
 
 	registerGroup := API.groups["/register"]
 	registerGroup.POST("", register)
