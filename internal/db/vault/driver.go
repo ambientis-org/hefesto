@@ -15,7 +15,11 @@ func getMongoDriver() (*mongo.Client, error) {
 	return mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
 }
 
-func getCollection(client *mongo.Client, collectionName string) (*mongo.Collection) {
+func getCollection(client *mongo.Client, collectionName string) *mongo.Collection {
 	return client.Database("hefestoVault").Collection(collectionName)
 }
 
+func New(collectionName string) *mongo.Collection {
+	client, _ := getMongoDriver()
+	return getCollection(client, collectionName)
+}
