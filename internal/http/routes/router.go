@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ambientis-org/hefesto/internal/db"
+	"github.com/ambientis-org/hefesto/internal/db/vault"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -41,6 +42,9 @@ var API = newRouter()
 // DataBase Package element
 var DataBase, _ = db.New(os.Getenv("POSTGRES_DSN"))
 
+// MongoDB Package element
+var MongoRepo = vault.New(os.Getenv("MONGODB_COLLECTION"))
+
 func healthcheck(c echo.Context) error {
 	if DataBase == nil {
 		return http.ErrAbortHandler
@@ -53,6 +57,7 @@ func GetRouter() *Router {
 	API.Server.GET("/healthcheck", healthcheck)
 	API.setupUsers()
 	API.setupLogin()
+	API.setupMoods()
 
 	return API
 }
