@@ -2,60 +2,23 @@ package routes
 
 import (
 	"context"
-	"github.com/ambientis-org/hefesto/internal/db/models"
+	dbModels "github.com/ambientis-org/hefesto/internal/db/models"
+	vaultModels "github.com/ambientis-org/hefesto/internal/db/vault/models"
 	"github.com/ambientis-org/hefesto/internal/http/auth"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 )
 
-// TODO: Move "Models" to other file
-type Mood struct {
-	ID 		  primitive.ObjectID `bson:"_id"`
-	CreatedAt time.Time `bson:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at"`
-	Value 	  int 		`bson:"value"`
-}
-
-func NewMood(value int) Mood {
-	return Mood{
-		ID: primitive.NewObjectID(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Value: value,
-	}
-}
-
-type Journal struct {
-	ID 		  primitive.ObjectID `bson:"_id"`
-	CreatedAt time.Time `bson:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at"`
-	UserID	  uint		`bson:"user_id"`
-	Username  string	`bson:"username"`
-	Moods	  []Mood	`bson:"moods"`
-}
-
-func NewJournal(userID uint, username string) *Journal {
-	return &Journal{
-		ID: primitive.NewObjectID(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		UserID: userID,
-		Username: username,
-		Moods: []Mood{},
-	}
-}
 
 // TODO: Move this function
-func getUser(username string) *models.User {
-	u := &models.User{}
+func getUser(username string) *dbModels.User {
+	u := &dbModels.User{}
 	DataBase.Where("username = ?", username).First(u)
 	return u
 }
@@ -68,10 +31,10 @@ var ctx = context.TODO()
 func createJournalFor(c echo.Context) error {
 	u := getUser(c.Param("username"))
 
-	j := &Journal{}
+	j := &vaultModels.Journal{}
 	err := MongoRepo.FindOne(ctx, bson.D{{"user_id", u.ID}}).Decode(&j)
 	if err == mongo.ErrNoDocuments {
-		j = NewJournal(u.ID, c.Param("username"))
+		j = vaultModels.NewJournal(u.ID, c.Param("username"))
 		_, err := MongoRepo.InsertOne(ctx, j)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -88,13 +51,13 @@ func addMoodForToday(c echo.Context) error {
 	u := getUser(c.Param("username"))
 
 	filter := bson.D{{"user_id", u.ID}}
-	j := &Journal{}
+	j := &vaultModels.Journal{}
 	err := MongoRepo.FindOne(ctx, filter).Decode(j)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	newMoodValue, _ := strconv.Atoi(c.Param("moodValue"))
-	m := NewMood(newMoodValue)
+	m := vaultModels.NewMood(newMoodValue)
 	opts := options.FindOneAndUpdate().SetUpsert(true)
 
 	tmpMoods := append(j.Moods, m)
@@ -115,7 +78,7 @@ func getUserMoods(c echo.Context) error {
 	u := getUser(c.Param("username"))
 
 	filter := bson.D{{"user_id", u.ID}}
-	j := &Journal{}
+	j := &vaultModels.Journal{}
 	err := MongoRepo.FindOne(ctx, filter).Decode(j)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
