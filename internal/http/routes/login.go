@@ -44,13 +44,8 @@ func login(c echo.Context) error {
 
 	return c.JSON(http.StatusAccepted, echo.Map{
 		"mentiaAuthToken": signedToken,
-		"username": user.Username,
+		"username":        user.Username,
 	})
-}
-
-
-func loginPreflight(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
 }
 
 // register POST method User handler
@@ -73,7 +68,6 @@ func (router *Router) setupLogin() {
 
 	loginGroup := API.groups["/login"]
 	loginGroup.POST("", login)
-	loginGroup.OPTIONS("", loginPreflight)
 
 	registerGroup := API.groups["/register"]
 	registerGroup.POST("", register)
