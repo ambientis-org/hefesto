@@ -1,6 +1,9 @@
 package routes
 
 import (
+	mongomodels "github.com/ambientis-org/hefesto/internal/db/mongo/models"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"os"
 	"time"
@@ -61,14 +64,36 @@ func register(c echo.Context) error {
 	return c.JSON(http.StatusCreated, user)
 }
 
+// createJournalFor Makes a new Journal on DB for user
+func createJournalFor(c echo.Context) error {
+	u := getUser(c.Param("username"))
+
+	j := &mongomodels.Journal{}
+	err := MongoRepo.FindOne(ctx, bson.D{{"user_id", u.ID}}).Decode(&j)
+	if err == mongo.ErrNoDocuments {
+		j = mongomodels.NewJournal(u.ID, c.Param("username"))
+		_, err := MongoRepo.InsertOne(ctx, j)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		return c.JSON(http.StatusOK, j)
+	}
+	return c.String(http.StatusAlreadyReported, "El usuario ya tiene un Journal")
+}
+
 // setupLogin Add Login handlers to API
 func (router *Router) setupLogin() {
 	router.addGroup("/login")
 	router.addGroup("/register")
+	router.addGroup("/newJournal")
 
 	loginGroup := API.groups["/login"]
 	loginGroup.POST("", login)
 
 	registerGroup := API.groups["/register"]
 	registerGroup.POST("", register)
+
+	newJournalGroup := API.groups["/newJournal"]
+	newJournalGroup.POST("/:username", createJournalFor)
 }
