@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/ambientis-org/hefesto/internal/db/models"
+	"github.com/ambientis-org/hefesto/internal/db/postgres/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

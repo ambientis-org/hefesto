@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/ambientis-org/hefesto/internal/db/models"
+	"github.com/ambientis-org/hefesto/internal/db/postgres/models"
 	"github.com/labstack/echo/v4"
 )
 

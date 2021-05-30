@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"time"
 
-	postgresmodels "github.com/ambientis-org/hefesto/internal/db/models"
-	mongomodels "github.com/ambientis-org/hefesto/internal/db/vault/models"
+	mongomodels "github.com/ambientis-org/hefesto/internal/db/mongo/models"
+	postgresmodels "github.com/ambientis-org/hefesto/internal/db/postgres/models"
 	"github.com/ambientis-org/hefesto/internal/http/auth"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -21,7 +22,6 @@ func getUser(username string) *postgresmodels.User {
 	DataBase.Where("username = ?", username).First(u)
 	return u
 }
-
 var ctx = context.TODO()
 
 // On Register create a new Journal for user
@@ -44,16 +44,16 @@ func createJournalFor(c echo.Context) error {
 	return c.String(http.StatusAlreadyReported, "El usuario ya tiene un Journal")
 }
 
-// TODO: Limit it to only one per day
 // addMoodForToday add a new value to Moods array for user
 func addMoodForToday(c echo.Context) error {
-	// Processing requesr
+	// Processing request
 	u := getUser(c.Param("username"))
-	m := &mongomodels.Mood{}
-	err := c.Bind(m)
+	requestBody := &mongomodels.Mood{}
+	err := c.Bind(requestBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, nil)
 	}
+	m := mongomodels.NewMood(requestBody.Value)
 
 	// Querying from MongoDB
 	filter := bson.D{{"user_id", u.ID}}
@@ -76,30 +76,47 @@ func addMoodForToday(c echo.Context) error {
 		},
 	}}
 
-	if m.CreatedAt.Date() == j.Moods[len(j.Moods)-1].Date() {
-		return c.String(http.StatusBadRequest, "Ys has regustrado un mood para hoy")
-	} else {
+	lenMoods := len(j.Moods)
+	newMoodWeekday := m.CreatedAt.UTC().Weekday()
+
+	if len(j.Moods) == 0 || j.Moods[lenMoods - 1].CreatedAt.Weekday() != newMoodWeekday {
 		err = MongoRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
+	} else {
+		return c.String(http.StatusAlreadyReported, "Ya has registrado un mood para hoy")
 	}
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.String(http.StatusOK, "Mood del día de hoy registrado con éxito")
+	return c.JSON(http.StatusCreated, m)
 }
-
-// TODO: Make GET using time periods
 
 // getUserMoods return moods
 func getUserMoods(c echo.Context) error {
 	u := getUser(c.Param("username"))
-
-	filter := bson.D{{"user_id", u.ID}}
 	j := &mongomodels.Journal{}
+	filter := bson.D{{"user_id", u.ID}}
 	err := MongoRepo.FindOne(ctx, filter).Decode(j)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+
+	if c.QueryParam("from") == "" && c.QueryParam("to") == "" {
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+	} else {
+		layout := "2006-01-02T15:04:05.000Z"
+		from, _ := time.Parse(layout, c.QueryParam("from"))
+		to, _ := time.Parse(layout, c.QueryParam("to"))
+
+		var moods []mongomodels.Mood
+
+		for _, v := range j.Moods {
+			moodTimestamp := v.CreatedAt.UTC().Unix()
+			if from.UTC().Unix() < moodTimestamp && moodTimestamp <= to.UTC().Unix() {
+				moods = append(moods, v)
+			}
+		}
+		j.Moods = moods
 	}
 
 	return c.JSON(http.StatusOK, j)
@@ -121,5 +138,4 @@ func (router *Router) setupMoods() {
 	group.POST("/:username", createJournalFor)
 	group.POST("/:username/add", addMoodForToday)
 	group.GET("/:username", getUserMoods)
-
 }
