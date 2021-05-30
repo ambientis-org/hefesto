@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	postgresmodels "github.com/ambientis-org/hefesto/internal/db/models"
-	mongomodels "github.com/ambientis-org/hefesto/internal/db/vault/models"
+	mongomodels "github.com/ambientis-org/hefesto/internal/db/mongo/models"
+	postgresmodels "github.com/ambientis-org/hefesto/internal/db/postgres/models"
 	"github.com/ambientis-org/hefesto/internal/http/auth"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -47,13 +47,14 @@ func createJournalFor(c echo.Context) error {
 // TODO: Limit it to only one per day
 // addMoodForToday add a new value to Moods array for user
 func addMoodForToday(c echo.Context) error {
-	// Processing requesr
+	// Processing request
 	u := getUser(c.Param("username"))
-	m := &mongomodels.Mood{}
-	err := c.Bind(m)
+	requestBody := &mongomodels.Mood{}
+	err := c.Bind(requestBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, nil)
 	}
+	m := mongomodels.NewMood(requestBody.Value)
 
 	// Querying from MongoDB
 	filter := bson.D{{"user_id", u.ID}}
@@ -76,17 +77,20 @@ func addMoodForToday(c echo.Context) error {
 		},
 	}}
 
-	if m.CreatedAt.Date() == j.Moods[len(j.Moods)-1].Date() {
-		return c.String(http.StatusBadRequest, "Ys has regustrado un mood para hoy")
-	} else {
+	lenMoods := len(j.Moods)
+	newMoodWeekday := m.CreatedAt.UTC().Weekday()
+
+	if len(j.Moods) == 0 || j.Moods[lenMoods - 1].CreatedAt.Weekday() != newMoodWeekday {
 		err = MongoRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
+	} else {
+		return c.String(http.StatusAlreadyReported, "Ya has registrado un mood para hoy")
 	}
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.String(http.StatusOK, "Mood del día de hoy registrado con éxito")
+	return c.JSON(http.StatusCreated, m)
 }
 
 // TODO: Make GET using time periods

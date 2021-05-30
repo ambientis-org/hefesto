@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/ambientis-org/hefesto/internal/db"
-	"github.com/ambientis-org/hefesto/internal/db/vault"
+	"github.com/ambientis-org/hefesto/internal/db/mongo"
+	"github.com/ambientis-org/hefesto/internal/db/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )

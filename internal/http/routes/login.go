@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ambientis-org/hefesto/internal/db/models"
+	"github.com/ambientis-org/hefesto/internal/db/postgres/models"
 	"github.com/ambientis-org/hefesto/internal/http/auth"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
