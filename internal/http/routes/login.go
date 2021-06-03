@@ -1,12 +1,14 @@
 package routes
 
 import (
-	mongomodels "github.com/ambientis-org/hefesto/internal/db/mongo/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"os"
 	"time"
+
+	mongomodels "github.com/ambientis-org/hefesto/internal/db/mongo/models"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/ambientis-org/hefesto/internal/db/postgres/models"
 	"github.com/ambientis-org/hefesto/internal/http/auth"
@@ -69,7 +71,7 @@ func createJournalFor(c echo.Context) error {
 	u := getUser(c.Param("username"))
 
 	j := &mongomodels.Journal{}
-	err := MongoRepo.FindOne(ctx, bson.D{{"user_id", u.ID}}).Decode(&j)
+	err := MongoRepo.FindOne(ctx, bson.D{primitive.E{Key: "user_id", Value: u.ID}}).Decode(&j)
 	if err == mongo.ErrNoDocuments {
 		j = mongomodels.NewJournal(u.ID, c.Param("username"))
 		_, err := MongoRepo.InsertOne(ctx, j)
