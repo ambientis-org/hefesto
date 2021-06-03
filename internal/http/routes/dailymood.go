@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -20,6 +21,7 @@ func getUser(username string) *postgresmodels.User {
 	DataBase.Where("username = ?", username).First(u)
 	return u
 }
+
 var ctx = context.TODO()
 
 // addMoodForToday add a new value to Moods array for user
@@ -57,7 +59,7 @@ func addMoodForToday(c echo.Context) error {
 	lenMoods := len(j.Moods)
 	newMoodWeekday := m.CreatedAt.UTC().Weekday()
 
-	if len(j.Moods) == 0 || j.Moods[lenMoods - 1].CreatedAt.Weekday() != newMoodWeekday {
+	if len(j.Moods) == 0 || j.Moods[lenMoods-1].CreatedAt.Weekday() != newMoodWeekday {
 		err = MongoRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
 	} else {
 		return c.String(http.StatusAlreadyReported, "Ya has registrado un mood para hoy")
@@ -74,7 +76,8 @@ func addMoodForToday(c echo.Context) error {
 func getUserMoods(c echo.Context) error {
 	u := getUser(c.Param("username"))
 	j := &mongomodels.Journal{}
-	filter := bson.D{{"user_id", u.ID}}
+
+	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
 	err := MongoRepo.FindOne(ctx, filter).Decode(j)
 
 	if c.QueryParam("from") == "" && c.QueryParam("to") == "" {
