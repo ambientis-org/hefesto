@@ -1,13 +1,11 @@
 package routes
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"time"
 
-	mongomodels "github.com/ambientis-org/hefesto/internal/db/mongo/models"
-	postgresmodels "github.com/ambientis-org/hefesto/internal/db/postgres/models"
+	"github.com/ambientis-org/hefesto/internal/db/mongo/models"
 	"github.com/ambientis-org/hefesto/internal/http/auth"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -16,29 +14,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func getUser(username string) *postgresmodels.User {
-	u := &postgresmodels.User{}
-	DataBase.Where("username = ?", username).First(u)
-	return u
-}
-
-var ctx = context.TODO()
-
 // addMoodForToday add a new value to Moods array for user
 func addMoodForToday(c echo.Context) error {
 	// Processing request
-	u := getUser(c.Param("username"))
-	requestBody := &mongomodels.Mood{}
+	u := GetUser(c.Param("username"))
+	requestBody := &models.Mood{}
 	err := c.Bind(requestBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, nil)
 	}
-	m := mongomodels.NewMood(requestBody.Value)
+	m := models.NewMood(requestBody.Value)
 
 	// Querying from MongoDB
-	filter := bson.D{{"user_id", u.ID}}
-	j := &mongomodels.Journal{}
-	err = MongoRepo.FindOne(ctx, filter).Decode(j)
+	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
+	j := &models.Journal{}
+	err = MongoMoodRepo.FindOne(ctx, filter).Decode(j)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -60,7 +50,7 @@ func addMoodForToday(c echo.Context) error {
 	newMoodWeekday := m.CreatedAt.UTC().Weekday()
 
 	if len(j.Moods) == 0 || j.Moods[lenMoods-1].CreatedAt.Weekday() != newMoodWeekday {
-		err = MongoRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
+		err = MongoMoodRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
 	} else {
 		return c.String(http.StatusAlreadyReported, "Ya has registrado un mood para hoy")
 	}
@@ -74,11 +64,11 @@ func addMoodForToday(c echo.Context) error {
 
 // getUserMoods return moods
 func getUserMoods(c echo.Context) error {
-	u := getUser(c.Param("username"))
-	j := &mongomodels.Journal{}
+	u := GetUser(c.Param("username"))
+	j := &models.Journal{}
 
 	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
-	err := MongoRepo.FindOne(ctx, filter).Decode(j)
+	err := MongoMoodRepo.FindOne(ctx, filter).Decode(j)
 
 	if c.QueryParam("from") == "" && c.QueryParam("to") == "" {
 		if err != nil {
@@ -89,7 +79,7 @@ func getUserMoods(c echo.Context) error {
 		from, _ := time.Parse(layout, c.QueryParam("from"))
 		to, _ := time.Parse(layout, c.QueryParam("to"))
 
-		var moods []mongomodels.Mood
+		var moods []models.Mood
 
 		for _, v := range j.Moods {
 			moodTimestamp := v.CreatedAt.UTC().Unix()

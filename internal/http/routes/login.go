@@ -71,10 +71,10 @@ func createJournalFor(c echo.Context) error {
 	u := getUser(c.Param("username"))
 
 	j := &mongomodels.Journal{}
-	err := MongoRepo.FindOne(ctx, bson.D{primitive.E{Key: "user_id", Value: u.ID}}).Decode(&j)
+	err := MongoMoodRepo.FindOne(ctx, bson.D{primitive.E{Key: "user_id", Value: u.ID}}).Decode(&j)
 	if err == mongo.ErrNoDocuments {
 		j = mongomodels.NewJournal(u.ID, c.Param("username"))
-		_, err := MongoRepo.InsertOne(ctx, j)
+		_, err := MongoMoodRepo.InsertOne(ctx, j)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}

@@ -13,6 +13,7 @@ type Journal struct {
 	UserID    uint               `bson:"user_id"`
 	Username  string             `bson:"username"`
 	Moods     []Mood             `bson:"moods"`
+	Posts     []Post             `bson:"posts"`
 }
 
 func NewJournal(userID uint, username string) *Journal {
