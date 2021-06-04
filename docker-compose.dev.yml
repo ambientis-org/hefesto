@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  db:
+    build: config/postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "gorm"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  vault:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/var/lib/mongodb/data
+
+volumes:
+  pgdata:
+  mongodata:
