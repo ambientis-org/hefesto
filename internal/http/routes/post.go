@@ -26,7 +26,7 @@ func createPost(c echo.Context) error {
 	newPost := models.NewPost(requestBody.Content)
 	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
 	j := &models.Journal{}
-	err = MongoPostsRepo.FindOne(ctx, filter).Decode(j)
+	err = MongoMoodRepo.FindOne(ctx, filter).Decode(j)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -43,9 +43,12 @@ func createPost(c echo.Context) error {
 		},
 	}}
 
-	err = MongoPostsRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
+	err = MongoMoodRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, nil)
+	}
 
-	return c.JSON(http.StatusOK, j)
+	return c.JSON(http.StatusOK, newPost)
 }
 
 func getUserPosts(c echo.Context) error {
@@ -53,7 +56,7 @@ func getUserPosts(c echo.Context) error {
 	j := &models.Journal{}
 
 	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
-	err := MongoPostsRepo.FindOne(ctx, filter).Decode(j)
+	err := MongoMoodRepo.FindOne(ctx, filter).Decode(j)
 
 	if c.QueryParam("from") == "" && c.QueryParam("to") == "" {
 		if err != nil {
@@ -91,6 +94,6 @@ func (router *Router) setupPosts() {
 
 	group.Use(middleware.JWTWithConfig(config))
 
-	group.POST("/:username/posts", addMoodForToday)
-	group.GET("/:username/posts", getUserMoods)
+	group.POST("/:username", createPost)
+	group.GET("/:username", getUserPosts)
 }

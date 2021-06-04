@@ -68,7 +68,7 @@ func register(c echo.Context) error {
 
 // createJournalFor Makes a new Journal on DB for user
 func createJournalFor(c echo.Context) error {
-	u := getUser(c.Param("username"))
+	u := GetUser(c.Param("username"))
 
 	j := &mongomodels.Journal{}
 	err := MongoMoodRepo.FindOne(ctx, bson.D{primitive.E{Key: "user_id", Value: u.ID}}).Decode(&j)

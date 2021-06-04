@@ -24,5 +24,6 @@ func NewJournal(userID uint, username string) *Journal {
 		UserID:    userID,
 		Username:  username,
 		Moods:     []Mood{},
+		Posts:     []Post{},
 	}
 }
