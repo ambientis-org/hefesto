@@ -59,6 +59,7 @@ func GetRouter() *Router {
 	API.setupUsers()
 	API.setupLogin()
 	API.setupMoods()
+	API.setupPosts()
 
 	return API
 }

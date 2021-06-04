@@ -14,7 +14,7 @@ type Post struct {
 }
 
 func NewPost(content string) Post {
-	return &Post{
+	return Post{
 		ID:        primitive.NewObjectID(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
