@@ -14,56 +14,44 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// addMoodForToday add a new value to Moods array for user
-func addMoodForToday(c echo.Context) error {
-	// Processing request
+func createPost(c echo.Context) error {
 	u := GetUser(c.Param("username"))
-	requestBody := &models.Mood{}
+	requestBody := &models.Post{}
+
 	err := c.Bind(requestBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, nil)
 	}
-	m := models.NewMood(requestBody.Value)
 
-	// Querying from MongoDB
+	newPost := models.NewPost(requestBody.Content)
 	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
 	j := &models.Journal{}
 	err = MongoMoodRepo.FindOne(ctx, filter).Decode(j)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-
-	// Adding mood to user's journal
+	tmpPosts := append(j.Posts, newPost)
 	opts := options.FindOneAndUpdate().SetUpsert(true)
-	tmpMoods := append(j.Moods, m)
+
 	update := bson.D{bson.E{
 		Key: "$set",
 		Value: bson.D{
 			bson.E{
-				Key:   "moods",
-				Value: tmpMoods,
+				Key:   "posts",
+				Value: tmpPosts,
 			},
 		},
 	}}
 
-	lenMoods := len(j.Moods)
-	newMoodWeekday := m.CreatedAt.UTC().Weekday()
-
-	if len(j.Moods) == 0 || j.Moods[lenMoods-1].CreatedAt.Weekday() != newMoodWeekday {
-		err = MongoMoodRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
-	} else {
-		return c.String(http.StatusAlreadyReported, "Ya has registrado un mood para hoy")
-	}
-
+	err = MongoMoodRepo.FindOneAndUpdate(ctx, filter, update, opts).Decode(&bson.M{})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return c.JSON(http.StatusBadRequest, nil)
 	}
 
-	return c.JSON(http.StatusCreated, m)
+	return c.JSON(http.StatusOK, newPost)
 }
 
-// getUserMoods return moods
-func getUserMoods(c echo.Context) error {
+func getUserPosts(c echo.Context) error {
 	u := GetUser(c.Param("username"))
 	j := &models.Journal{}
 
@@ -79,26 +67,26 @@ func getUserMoods(c echo.Context) error {
 		from, _ := time.Parse(layout, c.QueryParam("from"))
 		to, _ := time.Parse(layout, c.QueryParam("to"))
 
-		var moods []models.Mood
+		var posts []models.Post
 
-		for _, v := range j.Moods {
-			moodTimestamp := v.CreatedAt.UTC().Unix()
-			if from.UTC().Unix() < moodTimestamp && moodTimestamp <= to.UTC().Unix() {
-				moods = append(moods, v)
+		for _, v := range j.Posts {
+			postTimestamp := v.CreatedAt.UTC().Unix()
+			if from.UTC().Unix() < postTimestamp && postTimestamp <= to.UTC().Unix() {
+				posts = append(posts, v)
 			}
 		}
-		j.Moods = moods
+		j.Posts = posts
 	}
 
 	return c.JSON(http.StatusOK, j)
 }
 
-// setupMoods Add User handlers to API
-func (router *Router) setupMoods() {
+// setupPosts Add User handlers to API
+func (router *Router) setupPosts() {
 
 	// User endpoint, protecting it
-	router.addGroup("/mood")
-	group := API.groups["/mood"]
+	router.addGroup("/posts")
+	group := API.groups["/posts"]
 	config := middleware.JWTConfig{
 		Claims:     &auth.CustomClaims{},
 		SigningKey: []byte(os.Getenv("API_KEY")),
@@ -106,6 +94,6 @@ func (router *Router) setupMoods() {
 
 	group.Use(middleware.JWTWithConfig(config))
 
-	group.POST("/:username/add", addMoodForToday)
-	group.GET("/:username", getUserMoods)
+	group.POST("/:username", createPost)
+	group.GET("/:username", getUserPosts)
 }

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/ambientis-org/hefesto/internal/db/mongo"
-	"github.com/ambientis-org/hefesto/internal/db/postgres"
+	vault "github.com/ambientis-org/hefesto/internal/db/mongo"
+	db "github.com/ambientis-org/hefesto/internal/db/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -21,10 +21,10 @@ func newRouter() *Router {
 	server.Use(middleware.Recover())
 
 	customCORS := middleware.CORSConfig{
-		ExposeHeaders: []string{echo.HeaderSetCookie},
-		AllowHeaders: []string{echo.HeaderSetCookie, echo.HeaderContentType, echo.HeaderAuthorization},
-		AllowOrigins: []string{"http://localhost:3000", "http://127.0.0.1:3000"},
-		AllowMethods: []string{http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete, http.MethodOptions},
+		ExposeHeaders:    []string{echo.HeaderSetCookie},
+		AllowHeaders:     []string{echo.HeaderSetCookie, echo.HeaderContentType, echo.HeaderAuthorization},
+		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowMethods:     []string{http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete, http.MethodOptions},
 		AllowCredentials: true,
 	}
 	server.Use(middleware.CORSWithConfig(customCORS))
@@ -43,7 +43,8 @@ var API = newRouter()
 var DataBase, _ = db.New(os.Getenv("POSTGRES_DSN"))
 
 // MongoDB Package element
-var MongoRepo = vault.New(os.Getenv("MONGODB_COLLECTION"))
+var MongoMoodRepo = vault.New(os.Getenv("MONGODB_MOOD_COLLECTION"))
+var MongoPostsRepo = vault.New(os.Getenv("MONGODB_POSTS_COLLECTION"))
 
 func healthcheck(c echo.Context) error {
 	if DataBase == nil {
@@ -58,6 +59,7 @@ func GetRouter() *Router {
 	API.setupUsers()
 	API.setupLogin()
 	API.setupMoods()
+	API.setupPosts()
 
 	return API
 }

@@ -9,7 +9,8 @@ services:
       POSTGRES_DSN: "host=db user=gorm password=gorm dbname=hefesto port=5432 sslmode=disable"
       API_KEY: "JzNztV4A"
       MONGODB_URI: "mongodb://vault:27017"
-      MONGODB_COLLECTION: "moodVault"
+      MONGODB_MOOD_COLLECTION: "moodVault"
+      MONGODB_POSTS_COLLECTION: "postsVault"
     depends_on:
       - db
 
