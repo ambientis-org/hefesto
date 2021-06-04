@@ -61,6 +61,10 @@ func register(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	d := &models.Doctor{}
+	DataBase.Where("id = ?", user.DoctorID).First(d)
+
+	user.Doctor = *d
 	DataBase.Create(user)
 
 	return c.JSON(http.StatusCreated, user)
