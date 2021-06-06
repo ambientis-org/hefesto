@@ -18,5 +18,7 @@ func New(dsn string) (db *gorm.DB, err error) {
 		return nil, err
 	}
 
+	_ = db.AutoMigrate(&models.Doctor{})
+
 	return db, nil
 }
