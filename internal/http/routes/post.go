@@ -23,7 +23,7 @@ func createPost(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
-	newPost := models.NewPost(requestBody.Content)
+	newPost := models.NewPost(requestBody.Title, requestBody.Content)
 	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
 	j := &models.Journal{}
 	err = MongoMoodRepo.FindOne(ctx, filter).Decode(j)
