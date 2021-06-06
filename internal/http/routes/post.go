@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 	"os"
-	"time"
+	"strconv"
 
 	"github.com/ambientis-org/hefesto/internal/db/mongo/models"
 	"github.com/ambientis-org/hefesto/internal/http/auth"
@@ -23,7 +23,7 @@ func createPost(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
-	newPost := models.NewPost(requestBody.Content)
+	newPost := models.NewPost(requestBody.Title, requestBody.Content)
 	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
 	j := &models.Journal{}
 	err = MongoMoodRepo.FindOne(ctx, filter).Decode(j)
@@ -58,27 +58,19 @@ func getUserPosts(c echo.Context) error {
 	filter := bson.D{primitive.E{Key: "user_id", Value: u.ID}}
 	err := MongoMoodRepo.FindOne(ctx, filter).Decode(j)
 
-	if c.QueryParam("from") == "" && c.QueryParam("to") == "" {
+	if c.QueryParam("id") == "" {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		} else {
+			return c.JSON(http.StatusOK, j.Posts)
 		}
 	} else {
-		layout := "2006-01-02T15:04:05.000Z"
-		from, _ := time.Parse(layout, c.QueryParam("from"))
-		to, _ := time.Parse(layout, c.QueryParam("to"))
-
-		var posts []models.Post
-
-		for _, v := range j.Posts {
-			postTimestamp := v.CreatedAt.UTC().Unix()
-			if from.UTC().Unix() < postTimestamp && postTimestamp <= to.UTC().Unix() {
-				posts = append(posts, v)
-			}
+		postID, err := strconv.Atoi(c.QueryParam("id"))
+		if err != nil || postID == 0 {
+			return c.String(http.StatusBadRequest, "ID inválido")
 		}
-		j.Posts = posts
+		return c.JSON(http.StatusOK, j.Posts[postID-1])
 	}
-
-	return c.JSON(http.StatusOK, j)
 }
 
 // setupPosts Add User handlers to API
